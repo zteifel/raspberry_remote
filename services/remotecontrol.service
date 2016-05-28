@@ -1,0 +1,11 @@
+[Unit]
+Description=Home made remote control service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python /home/alarm/remote/main.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
