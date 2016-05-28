@@ -1,0 +1,14 @@
+[Unit]
+Description=Home made remote control service
+Requires=i3.service
+After=i3.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/kodi
+ExecStop=/usr/bin/killall kodi kodi.bin
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

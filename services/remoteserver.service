@@ -1,0 +1,11 @@
+[Unit]
+Description=Home made remote control service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python /home/zteifel/remote/server_pyro.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target
