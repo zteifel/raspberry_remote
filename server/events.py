@@ -1,6 +1,7 @@
 from time import sleep
 from evdev import ecodes as e
 from enum import Enum
+import logging as log
 
 from device import Tv,Receiver, HTPC
 from config import *
@@ -18,12 +19,14 @@ class Event(object):
             self.actions[keyname]()
 
     def activate(self,poweron):
+        log.debug('Activating event: %s' % self.NAME)
         Tv.poweron()
         if poweron:
             Receiver.poweron()
             sleep(self.start_delay)
 
     def deactivate(self,poweroff=False):
+        log.debug('De-activating event: %s' % self.NAME)
         if poweroff:
             Tv.poweroff()
             Receiver.poweroff()
@@ -42,8 +45,10 @@ class HTPCEvent(Event):
         super().activate(poweron)
         Tv.input("hdmi3")
         Receiver.input("htpc")
-        Receiver.mode(self.receiver_mode)
-        HTPC.unmute_app(self.pulse_names)
+        Receiver.mode(self.receiver_mode
+        HTPC.unmute_app(self.pulse_names))
+        if poweron:
+            sleep(2)
         HTPC.cont_service(self.pulse_names[0])
         HTPC.input(self.NAME)
 

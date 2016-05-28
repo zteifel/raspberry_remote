@@ -5,17 +5,21 @@ import traceback
 import json
 import Pyro4
 from evdev import ecodes as e
+import logging as log
+
 from config import *
 
 remoteserver = Pyro4.Proxy("PYRONAME:zteifel.remoteserver")
-remoteserver._pyroTimeout = 30
+remoteserver._pyroTimeout = 25
 sys.excepthook = Pyro4.util.excepthook
 
 class Device(object):
     @staticmethod
     def run(args):
-        proc = run(args, check=False, stdout=PIPE)
-        proc.check_returncode()
+        proc = run(args, check=False, stdout=PIPE, stderr=PIPE)
+        if proc.returncode != 0:
+            log.error('Command %s failed with errorcode: %i \n Error: %s' %
+                      (' '.join(args),proc.returncode), proc.stderr)
 
 
 class IrDevice(Device):
@@ -32,10 +36,17 @@ class HTPC(Device):
     def remotecall(func):
         if HTPC.awake:
             try:
-                return func()
-            except BaseException as e:
-                # print("exception calling remote server")
-                print("".join(Pyro4.util.getPyroTraceback()))
+                result = func()
+                if result and result[1] != 0:
+                    err_msg = (
+                        'The remote call: %s failed with msg:' % result[0],
+                        result[2],
+                        result[3])
+                    log.error('\n'.join(err_msg))
+            except Exception as e:
+                log.error(e)
+                traceback = '\n'.join(Pyro4.util.getPyroTraceback())
+                log.error('Failed remote call: %s' % traceback)
 
     @staticmethod
     def mouseaction(events):
@@ -71,13 +82,16 @@ class HTPC(Device):
     def wake():
         Device.run(["wol","00:1d:92:62:fd:19"])
         HTPC.awake = True
+        log.debug('Waking up HTPC')
 
     @staticmethod
     def sleep():
         HTPC.remotecall(lambda: remoteserver.sleep())
         HTPC.awake = False
+        log.debug('Putting HTPC to sleep')
 
     def input(src):
+        log.debug('Swithcing HTPC input to %s' % src)
         if src == KODI:
             keys = [e.KEY_LEFTMETA,e.KEY_1]
         elif src == SPOTIFY:
@@ -98,10 +112,12 @@ class Tv(IrDevice):
     @staticmethod
     def poweron():
         IrDevice.run("lgtv","poweron")
+        log.debug('Turning on TV')
 
     @staticmethod
     def poweroff():
         IrDevice.run("lgtv","poweroff")
+        log.debug('Turning off TV')
 
     @staticmethod
     def channelup():
@@ -114,6 +130,7 @@ class Tv(IrDevice):
     @staticmethod
     def input(src):
         IrDevice.run("lgtv",src)
+        log.debug('Switching TV input to %s' % src)
 
 class Receiver(IrDevice):
 
@@ -123,11 +140,13 @@ class Receiver(IrDevice):
 
     @staticmethod
     def poweron():
+        log.debug('Turning on receiver')
         Receiver.command("poweron")
 
     @staticmethod
     def poweroff():
         Receiver.command("poweroff")
+        log.debug('Turning off reciever')
 
     @staticmethod
     def volumeup():
@@ -144,6 +163,7 @@ class Receiver(IrDevice):
     @staticmethod
     def input(src):
         Receiver.command(src)
+        log.debug('Switching receiver input to %s' % src)
 
     @staticmethod
     def mode(mode):
