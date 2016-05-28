@@ -4,6 +4,7 @@ import _thread as thread
 from subprocess import run, PIPE
 from evdev import UInput, InputEvent, ecodes as e
 from time import sleep
+import logging as log
 
 from pulse_mute import Pulse
 
@@ -17,8 +18,12 @@ class RemoteServer(object):
         }
         self.mouse = UInput(cap)
 
+    def run(self, args):
+        proc = run(args, check=False, stdout=PIPE, stderr=PIPE)
+        return (args, proc.returncode, proc.stderr,proc.stdout)
+
     def handshake(self):
-        return "Server is up"
+        return
 
     @Pyro4.oneway
     def sleep(self):
@@ -38,17 +43,16 @@ class RemoteServer(object):
 
     def pause(self,appname):
         if appname == "spotify":
-            self.pause_spotify()
+            return self.pause_spotify()
         elif appname == "kodi":
-            self.pause_kodi()
+            return self.pause_kodi()
 
     def pause_spotify(self):
         args = ["dbus-send", "--print-reply",
                 "--dest=org.mpris.MediaPlayer2.spotify",
                 "/org/mpris/MediaPlayer2",
                 "org.mpris.MediaPlayer2.Player.Pause"]
-        proc = run(args, check=False)
-        proc.check_returncode()
+        return self.run(args)
 
     def pause_kodi(self):
         kodi = XBMC("http://192.168.1.75:8080/jsonrpc")
@@ -69,21 +73,26 @@ class RemoteServer(object):
     def unmute_app(self, appname):
         Pulse.unmute_input(appname)
 
-    @Pyro4.oneway
     def pause_service(self,appname):
-        proc = run(["systemctl","--user","kill","-s","STOP","%s.service" %appname],
-                   check=False,stdout=PIPE)
-        print(proc.stdout)
+        args = ["systemctl","--user","kill","-s","STOP","%s.service" %appname]
+        result = self.run(args)
         sleep(2)
+        return result
 
     def continue_service(self,appname):
-        proc = run(["systemctl","--user","kill","-s","CONT","%s.service" %appname],
-                   check=False,stdout=PIPE)
-        print(proc.stdout)
+        args = ["systemctl","--user","kill","-s","CONT","%s.service" %appname]
+        return self.run(args)
+
+def init_log():
+    log_format = '%(levelname)s:%(message)s'
+    log_file = '/home/zteifel/remote/server.log'
+    log.basicConfig(format=log_format, level=log.DEBUG,filename=log_file)
 
 def start_nameserver():
     Pyro4.naming.startNSloop(host,port)
 
+init_log()
+log.info('Starting remote server')
 host = "192.168.1.75"
 port = 9093
 thread.start_new_thread(start_nameserver,())
@@ -92,5 +101,4 @@ daemon = Pyro4.Daemon(host)
 rs_uri = daemon.register(rs)
 ns = Pyro4.locateNS(host,port)
 ns.register("zteifel.remoteserver", rs_uri)
-print(ns.list())
 daemon.requestLoop()

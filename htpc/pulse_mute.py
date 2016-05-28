@@ -1,8 +1,17 @@
 import re
 from subprocess import run, PIPE
+import logging as log
 
 
 class Pulse(object):
+
+    @staticmethod
+    def run(args):
+        proc = run(args, check=False, stdout=PIPE, stderr=PIPE)
+        if proc.returncode != 0:
+            return proc.err 
+        else:
+            return proc.stdout
 
     @staticmethod
     def get_hw_sink():
@@ -45,11 +54,11 @@ class Pulse(object):
     @staticmethod
     def move_sink(index,sinkname):
         if index and sinkname:
-            print("moving sink input %s to sink output %s" % (index,sinkname))
             p = run(["pacmd","move-sink-input",index,sinkname], check=True, stdout=PIPE)
-            print("Out: %s\n Returncode: %s" % (p.stdout,p.returncode))
-            if p.returncode == 1 or "failed" in p.stdout.decode("utf-8"):
-                run(["pacmd","kill-sink-input",index], check=True, stdout=PIPE)
+            if p.returncode != 0 or "failed" in p.stdout.decode("utf-8"):
+                log.warning('failed to move sink input %s to sink %s' % (index, sinkname))
+                log.info('Killing sink input %s' % index)
+                run(["pacmd","kill-sink-input",index], check=False, stdout=PIPE)
 
     @staticmethod
     def get_info(appname):
