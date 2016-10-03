@@ -21,8 +21,8 @@ class Event(object):
     def activate(self,poweron):
         log.debug('Activating event: %s' % self.NAME)
         Tv.poweron()
+        Receiver.poweron()
         if poweron:
-            Receiver.poweron()
             sleep(self.start_delay)
 
     def deactivate(self,poweroff=False):
@@ -41,12 +41,20 @@ class HTPCEvent(Event):
         self.receiver_mode = None
 
     def activate(self, poweron=False):
-        HTPC.wake()
-        super().activate(poweron)
-        Tv.input("hdmi3")
-        Receiver.input("htpc")
-        Receiver.mode(self.receiver_mode
-        HTPC.unmute_app(self.pulse_names))
+        log.debug('Activating event: %s' % self.NAME)
+        Tv.poweron()
+        Receiver.poweron()
+        if poweron:
+            HTPC.wake()
+            Tv.input("hdmi3")
+            Receiver.input("htpc")
+            Receiver.mode(self.receiver_mode)
+        else:
+            Tv.input("hdmi3")
+            Receiver.input("htpc")
+            Receiver.mode(self.receiver_mode)
+            HTPC.wake()
+        HTPC.unmute_app(self.pulse_names)
         if poweron:
             sleep(2)
         HTPC.cont_service(self.pulse_names[0])

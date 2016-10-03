@@ -9,7 +9,7 @@ import logging as log
 
 from config import *
 
-remoteserver = Pyro4.Proxy("PYRONAME:zteifel.remoteserver")
+remoteserver = Pyro4.Proxy("PYRONAME:zteifel.remoteserver@192.168.1.75:9093")
 remoteserver._pyroTimeout = 25
 sys.excepthook = Pyro4.util.excepthook
 
@@ -80,7 +80,7 @@ class HTPC(Device):
 
     @staticmethod
     def wake():
-        Device.run(["wol","00:1d:92:62:fd:19"])
+        Device.run(["wake-htpc"])
         HTPC.awake = True
         log.debug('Waking up HTPC')
 

@@ -1,0 +1,7 @@
+#!/bin/bash
+
+ping -c1 -w1 192.168.1.75
+while [ $? -ne 0 ]; do
+  wol c4:12:f5:31:ae:89
+  ping -c1 -w1 192.168.1.75
+done
