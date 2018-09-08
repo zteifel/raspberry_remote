@@ -125,7 +125,9 @@ class Spotify(HTPCEvent, MouseEvent, PauseEvent):
             "up": lambda: HTPC.keycombo([e.KEY_UP]),
             "down": lambda: HTPC.keycombo([e.KEY_DOWN]),
             "ok": lambda: HTPC.keycombo([e.KEY_SPACE]),
-            "play": lambda: HTPC.keycombo([e.KEY_SPACE])})
+            "play": lambda: [HTPC.keycombo([e.KEY_SPACE]),
+                             sleep(1),
+                             HTPC.unmute_app([SPOTIFY])]})
 
 
 class WatchPlay(HTPCEvent, MouseEvent):

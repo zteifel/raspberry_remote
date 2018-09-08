@@ -1,15 +1,17 @@
 from remote import Mini_remote as Mini
 from events import WatchTv, WatchPlay, Spotify, Kodi
 from events import MouseEvent, PauseEvent
-from time import time
+from lamp import Lamp, LampGroup
+import time
 import logging as log
+
 
 class Main(object):
 
     def __init__(self):
         self.active_event = None
-        self.ide_time = 180 # min
-        self.idle_start = time()
+        self.lamp_timeout = 10
+        self.double_timeout = 0.3
         self.inactive_events = {
             Spotify.NAME: Spotify(),
             Kodi.NAME: Kodi(),
@@ -22,6 +24,17 @@ class Main(object):
             "left": Spotify,
             "right": WatchPlay
         }
+        self.lamp_keys = {
+            "up": "ceiling",
+            "left": "bed",
+            "right": "sofa",
+            "down": "all"
+        }
+        self.lamp_group = LampGroup({
+            "sofa": Lamp(100,1),
+            "ceiling": Lamp(100,2),
+            "bed": Lamp(100,3),
+        })
         self.remotes = [Mini()]
         self.active_modkey = None
 
@@ -37,6 +50,52 @@ class Main(object):
             else:
                 log.info("Switching event to: %s" % event.NAME)
                 self.active_event.activate()
+
+    def read_key(self,remote,timeout=None):
+       event = remote.event(timeout)
+       if event:
+            action, ev = event
+            return ev['keyname']
+
+    def lamp_mode(self,remote):
+        last_activity = time.time()
+        first_key = None
+        first_time = None
+        while time.time() - last_activity < self.lamp_timeout:
+            keyname = self.read_key(remote,-1)
+            # Single press
+            if first_key and time.time() - first_time > self.double_timeout:
+                if first_key == "down":
+                    self.lamp_group.toggle()
+                    log.debug("toggle all lights")
+                else:
+                    lamp = self.lamp_keys[first_key]
+                    self.lamp_group.lamps[lamp].toggle()
+                    log.debug("toggle light %s" % lamp)
+                first_key = None
+            # No press
+            elif not keyname:
+                continue
+            # Exit lamp mode due to other than lamp key
+            elif keyname not in self.lamp_keys:
+                return
+            # First press
+            elif not first_key:
+                first_key = keyname
+                first_time = time.time()
+            # Double press
+            else:
+                if keyname != first_key:
+                    first_key = keyname
+                    first_time = time.time()
+                else:
+                    first_key = None
+                    lamp =  self.lamp_keys[keyname]
+                    self.lamp_group.lamps[lamp].dim()
+                    log.debug("dimming light %s" % lamp)
+            last_activity = time.time()
+
+        log.debug("Exiting lamp mode by timeout")
 
     def eventhandler(self):
         while True:
@@ -68,11 +127,14 @@ class Main(object):
 
                     elif self.active_modkey == "ok":
                         self.active_modkey = None
-                        if self.active_event:
-                            poweron = False
-                        else:
-                            poweron = True
-                        if keyname in self.input_keys:
+                        if keyname == "back":
+                            log.debug('Lamp mode activated: %s' % keyname)
+                            self.lamp_mode(remote)
+                        elif keyname in self.input_keys:
+                            if self.active_event:
+                                poweron = False
+                            else:
+                                poweron = True
                             log.debug('Input key pressed: %s' % keyname)
                             self.switch_event(self.input_keys[keyname],poweron)
 

@@ -3,21 +3,12 @@ from selectors import DefaultSelector, EVENT_READ
 from enum import IntEnum
 import _thread as thread
 
-selector = DefaultSelector()
-
-kbd = InputDevice('/dev/input/by-id/usb-SAGE_SAGE_AirMouse-event-kbd')
-mouse = InputDevice('/dev/input/by-id/usb-SAGE_SAGE_AirMouse-if01-event-mouse')
-
-kbd.grab()
-mouse.grab()
-
-selector.register(kbd, EVENT_READ)
-selector.register(mouse, EVENT_READ)
-
 
 class Mini_remote(object):
 
     def __init__(self):
+        self.selector = DefaultSelector()
+        self.init_hardware()
         self.mouseevents = []
         self.prev_value = 1
         self.keynames = {
@@ -33,8 +24,29 @@ class Mini_remote(object):
             114: "volumedown",
             115: "volumeup"}
 
-    def event(self):
-        for key, mask in selector.select():
+
+    def init_hardware(self):
+        path_dir = '/dev/input/by-path/'
+        paths = (
+            # Blue
+            path_dir + 'platform-20980000.usb-usb-0:1.2.1:1.0-event-kbd',
+            path_dir + 'platform-20980000.usb-usb-0:1.2.1:1.1-event-mouse',
+            # Green
+            path_dir + 'platform-20980000.usb-usb-0:1.2.2:1.0-event-kbd',
+            path_dir + 'platform-20980000.usb-usb-0:1.2.2:1.1-event-mouse',
+            # Purple
+            path_dir + 'platform-20980000.usb-usb-0:1.2.3:1.0-event-kbd',
+            path_dir + 'platform-20980000.usb-usb-0:1.2.3:1.1-event-mouse',)
+            #path_dir + 'platform-20980000.usb-usb-0:1.2.4:1.0-event-kbd',
+            #path_dir + 'platform-20980000.usb-usb-0:1.2.4:1.1-event-mouse')
+
+        for path in paths:
+            i = InputDevice(path)
+            i.grab()
+            self.selector.register(i,EVENT_READ)
+
+    def event(self,timeout=None):
+        for key, mask in self.selector.select(timeout=timeout):
             device = key.fileobj
             for ev in device.read():
                 if ev.type == ecodes.EV_REL or ev.code == ecodes.BTN_MOUSE:
