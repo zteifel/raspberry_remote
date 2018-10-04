@@ -12,7 +12,7 @@ class Event(object):
         self.actions = {
             "volumeup": Receiver.volumeup,
             "volumedown": Receiver.volumedown}
-        self.start_delay = 8
+        self.start_delay = 9
 
     def keyaction(self,keyname):
         if keyname in self.actions:
@@ -28,6 +28,7 @@ class Event(object):
     def deactivate(self,poweroff=False):
         log.debug('De-activating event: %s' % self.NAME)
         if poweroff:
+            Tv.input("hdmi3") # Workaround for radio when tv was off in tv mode
             Tv.poweroff()
             Receiver.poweroff()
             HTPC.sleep()
@@ -41,22 +42,14 @@ class HTPCEvent(Event):
         self.receiver_mode = None
 
     def activate(self, poweron=False):
-        log.debug('Activating event: %s' % self.NAME)
-        Tv.poweron()
-        Receiver.poweron()
+        super().activate(poweron)
+        Receiver.input("htpc")
+        Receiver.mode(self.receiver_mode)
         if poweron:
             HTPC.wake()
-            Tv.input("hdmi3")
-            Receiver.input("htpc")
-            Receiver.mode(self.receiver_mode)
-        else:
-            Tv.input("hdmi3")
-            Receiver.input("htpc")
-            Receiver.mode(self.receiver_mode)
-            HTPC.wake()
+        Tv.input("hdmi3")
         HTPC.unmute_app(self.pulse_names)
-        if poweron:
-            sleep(2)
+        sleep(0.5)
         HTPC.cont_service(self.pulse_names[0])
         HTPC.input(self.NAME)
 

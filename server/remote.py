@@ -3,8 +3,7 @@ from selectors import DefaultSelector, EVENT_READ
 from enum import IntEnum
 import _thread as thread
 
-
-class Mini_remote(object):
+class NewRemote(object):
 
     def __init__(self):
         self.selector = DefaultSelector()
@@ -18,27 +17,19 @@ class Mini_remote(object):
             108: "down",
             105: "left",
             106: "right",
-            273: "back",
+            1: "back",
             172: "home",
-            164: "play",
             114: "volumedown",
-            115: "volumeup"}
+            115: "volumeup",
+            116: "power",
+            272: "btn_left"}
 
 
     def init_hardware(self):
         path_dir = '/dev/input/by-path/'
         paths = (
-            # Blue
             path_dir + 'platform-20980000.usb-usb-0:1.2.1:1.0-event-kbd',
-            path_dir + 'platform-20980000.usb-usb-0:1.2.1:1.1-event-mouse',
-            # Green
-            path_dir + 'platform-20980000.usb-usb-0:1.2.2:1.0-event-kbd',
-            path_dir + 'platform-20980000.usb-usb-0:1.2.2:1.1-event-mouse',
-            # Purple
-            path_dir + 'platform-20980000.usb-usb-0:1.2.3:1.0-event-kbd',
-            path_dir + 'platform-20980000.usb-usb-0:1.2.3:1.1-event-mouse',)
-            #path_dir + 'platform-20980000.usb-usb-0:1.2.4:1.0-event-kbd',
-            #path_dir + 'platform-20980000.usb-usb-0:1.2.4:1.1-event-mouse')
+            path_dir + 'platform-20980000.usb-usb-0:1.2.1:1.1-event-mouse')
 
         for path in paths:
             i = InputDevice(path)
@@ -64,13 +55,23 @@ class Mini_remote(object):
     def keyaction(self, code, value):
         if value == 0 and self.prev_value == 0:
             return
-        elif value == 0:
-            keyname = self.keynames[code]
-            if self.prev_value == 2:
-                pressmode = 'long'
+
+        if value == 1:
+            self.prev_value = 1
+            return
+
+        if value == 2:
+            if code == 28 or code == 272 or code == 116:
+                self.prev_value = 2
+                return
             else:
-                pressmode = 'single'
-            self.prev_value = value
-            return "kbd", {'keyname': keyname, 'pressmode': pressmode}
+                self.prev_value = 1
+
+        if self.prev_value == 2:
+            pressmode = 'long'
         else:
-            self.prev_value = value
+            pressmode = 'single'
+
+        keyname = self.keynames[code]
+        self.prev_value = 0
+        return "kbd", {'keyname': keyname, 'pressmode': pressmode}

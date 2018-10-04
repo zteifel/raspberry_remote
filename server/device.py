@@ -142,6 +142,8 @@ class Receiver(IrDevice):
     def poweron():
         log.debug('Turning on receiver')
         Receiver.command("poweron")
+        Receiver.command("poweron")
+        Receiver.command("poweron")
 
     @staticmethod
     def poweroff():

@@ -1,4 +1,4 @@
-from remote import Mini_remote as Mini
+from remote import NewRemote as Remote
 from events import WatchTv, WatchPlay, Spotify, Kodi
 from events import MouseEvent, PauseEvent
 from lamp import Lamp, LampGroup
@@ -35,7 +35,7 @@ class Main(object):
             "ceiling": Lamp(100,2),
             "bed": Lamp(100,3),
         })
-        self.remotes = [Mini()]
+        self.remotes = [Remote()]
         self.active_modkey = None
 
     def switch_event(self, event, poweron):
@@ -97,6 +97,7 @@ class Main(object):
 
         log.debug("Exiting lamp mode by timeout")
 
+
     def eventhandler(self):
         while True:
             for remote in self.remotes:
@@ -112,37 +113,40 @@ class Main(object):
 
                 elif action and action == 'kbd':
                     keyname = ev['keyname']
+
                     if ev['pressmode'] == 'long':
                         log.debug('Key long press: %s' % keyname)
-                        if keyname == "menu":
-                            self.active_modkey = None
-                            if self.active_event:
-                                self.active_event.deactivate(poweroff=True)
-                                event = self.active_event
-                                name = event.NAME
-                                self.inactive_events[name] = event
-                                self.active_event = None
-                        elif not self.active_modkey:
-                            self.active_modkey = keyname
+                        self.active_modkey = keyname
 
-                    elif self.active_modkey == "ok":
+                    elif keyname == "power":
                         self.active_modkey = None
-                        if keyname == "back":
-                            log.debug('Lamp mode activated: %s' % keyname)
-                            self.lamp_mode(remote)
-                        elif keyname in self.input_keys:
+                        if self.active_event:
+                            self.active_event.deactivate(poweroff=True)
+                            event = self.active_event
+                            name = event.NAME
+                            self.inactive_events[name] = event
+                            self.active_event = None
+
+                    elif keyname == "home":
+                        self.active_modkey = None
+                        log.debug('Lamp mode activated: %s' % keyname)
+                        self.lamp_mode(remote)
+
+                    elif (self.active_modkey == "ok" or
+                          self.active_modkey == "power"):
+                        if keyname in self.input_keys:
                             if self.active_event:
                                 poweron = False
                             else:
                                 poweron = True
                             log.debug('Input key pressed: %s' % keyname)
                             self.switch_event(self.input_keys[keyname],poweron)
+                        self.active_modkey = None
 
                     elif self.active_event:
                         self.active_modkey = None
                         log.debug('Key pressed: %s' % keyname)
                         self.active_event.keyaction(keyname)
-
                     else:
                         log.debug('Key not defined pressed: %s' % keyname)
                         self.active_modkey = None
