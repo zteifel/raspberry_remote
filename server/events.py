@@ -15,6 +15,7 @@ class Event(object):
         self.start_delay = 9
 
     def keyaction(self,keyname):
+        log.debug("%s: action: %s" % (self.NAME, keyname))
         if keyname in self.actions:
             self.actions[keyname]()
 
@@ -31,7 +32,6 @@ class Event(object):
             Tv.input("hdmi3") # Workaround for radio when tv was off in tv mode
             Tv.poweroff()
             Receiver.poweroff()
-            HTPC.sleep()
 
 
 class HTPCEvent(Event):
@@ -58,6 +58,8 @@ class HTPCEvent(Event):
            self.pause()
         HTPC.stop_service(self.pulse_names[0])
         HTPC.mute_app(self.pulse_names)
+        if poweroff:
+            HTPC.sleep()
         super().deactivate(poweroff)
 
 
@@ -84,7 +86,6 @@ class WatchTv(Event):
 
     def activate(self, poweron=False):
         super().activate(poweron)
-        HTPC.sleep()
         Tv.input("tv")
         Receiver.input("tv")
         Receiver.mode("dolby")

@@ -147,6 +147,12 @@ class Main(object):
                         self.active_modkey = None
                         log.debug('Key pressed: %s' % keyname)
                         self.active_event.keyaction(keyname)
+
+                    elif not self.active_event:
+                        log.debug('Input key pressed: %s' % keyname)
+                        poweron = True
+                        self.switch_event(self.input_keys[keyname],poweron)
+
                     else:
                         log.debug('Key not defined pressed: %s' % keyname)
                         self.active_modkey = None
