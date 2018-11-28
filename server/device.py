@@ -111,12 +111,12 @@ class Tv(IrDevice):
 
     @staticmethod
     def poweron():
-        IrDevice.run("lgtv","poweron")
+        IrDevice.run("lgtv","poweron",3)
         log.debug('Turning on TV')
 
     @staticmethod
     def poweroff():
-        IrDevice.run("lgtv","poweroff")
+        IrDevice.run("lgtv","poweroff",3)
         log.debug('Turning off TV')
 
     @staticmethod
@@ -141,22 +141,20 @@ class Receiver(IrDevice):
     @staticmethod
     def poweron():
         log.debug('Turning on receiver')
-        Receiver.command("poweron")
-        Receiver.command("poweron")
-        Receiver.command("poweron")
+        Receiver.command("poweron",3)
 
     @staticmethod
     def poweroff():
-        Receiver.command("poweroff")
+        Receiver.command("poweroff",3)
         log.debug('Turning off reciever')
 
     @staticmethod
     def volumeup():
-        Receiver.command("volumeup")
+        Receiver.command("volumeup",3)
 
     @staticmethod
     def volumedown():
-        Receiver.command("volumedown")
+        Receiver.command("volumedown",3)
 
     @staticmethod
     def mute():
