@@ -28,8 +28,10 @@ class NewRemote(object):
     def init_hardware(self):
         path_dir = '/dev/input/by-path/'
         paths = (
-            path_dir + 'platform-20980000.usb-usb-0:1.2.1:1.0-event-kbd',
-            path_dir + 'platform-20980000.usb-usb-0:1.2.1:1.1-event-mouse')
+            path_dir + 'platform-20980000.usb-usb-0:1.2:1.0-event-kbd',
+            path_dir + 'platform-20980000.usb-usb-0:1.2:1.1-event-mouse',
+            path_dir + 'platform-20980000.usb-usb-0:1.4:1.0-event-kbd',
+            path_dir + 'platform-20980000.usb-usb-0:1.4:1.1-event-mouse')
 
         for path in paths:
             i = InputDevice(path)
