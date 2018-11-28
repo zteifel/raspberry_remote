@@ -1,4 +1,5 @@
 import Pyro4
+import Pyro4.naming
 from xbmcjson import XBMC
 import _thread as thread
 from subprocess import run, PIPE
@@ -8,6 +9,7 @@ import logging as log
 
 from pulse_mute import Pulse
 
+@Pyro4.expose
 class RemoteServer(object):
     def __init__(self):
         self.ui = UInput()
@@ -27,7 +29,8 @@ class RemoteServer(object):
 
     @Pyro4.oneway
     def sleep(self):
-        proc = run(["sudo","pm-suspend"], check=False)
+        log.debug("Putting system to sleep")
+        proc = run(["sudo","systemctl","suspend"], check=False)
 
     def keycombo(self,keys):
         for key in keys:
@@ -48,6 +51,7 @@ class RemoteServer(object):
             return self.pause_kodi()
 
     def pause_spotify(self):
+        log.debug("Pausing spotify")
         args = ["dbus-send", "--print-reply",
                 "--dest=org.mpris.MediaPlayer2.spotify",
                 "/org/mpris/MediaPlayer2",
@@ -55,7 +59,8 @@ class RemoteServer(object):
         return self.run(args)
 
     def pause_kodi(self):
-        kodi = XBMC("http://192.168.1.75:8080/jsonrpc")
+        log.debug("Pausing Kodi")
+        kodi = XBMC("http://192.168.1.69:8080/jsonrpc")
         playerid_result = kodi.Player.GetActivePlayers()['result']
         if playerid_result:
             playerid = playerid_result[0]['playerid']
@@ -74,12 +79,13 @@ class RemoteServer(object):
         Pulse.unmute_input(appname)
 
     def pause_service(self,appname):
+        log.debug("Suspending service: %s" % appname)
         args = ["systemctl","--user","kill","-s","STOP","%s.service" %appname]
         result = self.run(args)
-        sleep(2)
         return result
 
     def continue_service(self,appname):
+        log.debug("Resuming_ service: %s" % appname)
         args = ["systemctl","--user","kill","-s","CONT","%s.service" %appname]
         return self.run(args)
 
@@ -93,7 +99,7 @@ def start_nameserver():
 
 init_log()
 log.info('Starting remote server')
-host = "192.168.1.75"
+host = "192.168.1.69"
 port = 9093
 thread.start_new_thread(start_nameserver,())
 rs = RemoteServer()
